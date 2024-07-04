@@ -5,9 +5,11 @@ import './App.css';
 
 /**
  * State declaration for <App />
+ *   1.change the static table into a live graph.
  */
 interface IState {
   data: ServerRespond[],
+  showGraph: boolean,
 }
 
 /**
@@ -21,30 +23,47 @@ class App extends Component<{}, IState> {
     this.state = {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
-      data: [],
+        data: [],
+        showGraph:false,
     };
   }
 
   /**
    * Render Graph react component with state.data parse as property data
+   * -adding a condition to render the graph when the application state’s `showGraph` property is `true`.
    */
-  renderGraph() {
-    return (<Graph data={this.state.data}/>)
+    renderGraph() {
+        if (this.state.showGraph) {
+            return (<Graph data={this.state.data} />)
+        }
+    
   }
 
   /**
    * Get new data from server and update the state with the new data
+  
    */
-  getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
-      // Update the state by creating a new array of data that consists of
-      // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+    getDataFromServer() {
+        let x = 0;
+        const interval = setInterval(() => {
+            DataStreamer.getData((serverResponds: ServerRespond[]) => {
+                // Update the state by creating a new array of data that consists of
+                // Previous data in the state and the new data from server
+                this.setState({
+                    data: serverResponds,
+                    showGraph: true,
+                });
+            });
+            x++;
+            if (x > 1000) { // 1000 iterations.
+                clearInterval(interval);
+            }
+        }, 100);//100 milliseconds 
   }
 
   /**
    * Render the App react component
+   *
    */
   render() {
     return (
@@ -62,6 +81,7 @@ class App extends Component<{}, IState> {
             onClick={() => {this.getDataFromServer()}}>
             Start Streaming Data
           </button>
+          
           <div className="Graph">
             {this.renderGraph()}
           </div>

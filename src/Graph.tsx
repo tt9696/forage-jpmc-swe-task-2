@@ -14,7 +14,7 @@ interface IProps {
  * Perspective library adds load to HTMLElement prototype.
  * This interface acts as a wrapper for Typescript compiler.
  */
-interface PerspectiveViewerElement {
+interface PerspectiveViewerElement extends HTMLElement {
   load: (table: Table) => void,
 }
 
@@ -30,28 +30,39 @@ class Graph extends Component<IProps, {}> {
     return React.createElement('perspective-viewer');
   }
 
-  componentDidMount() {
+    componentDidMount() {
     // Get element to attach the table from the DOM.
-    const elem: PerspectiveViewerElement = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+
+    const elem = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
 
     const schema = {
-      stock: 'string',
-      top_ask_price: 'float',
-      top_bid_price: 'float',
-      timestamp: 'date',
+        stock: 'string',
+        top_ask_price: 'float',
+        top_bid_price: 'float',
+        timestamp: 'date',
     };
 
     if (window.perspective && window.perspective.worker()) {
-      this.table = window.perspective.worker().table(schema);
+        this.table = window.perspective.worker().table(schema);
     }
     if (this.table) {
-      // Load the `table` in the `<perspective-viewer>` DOM reference.
+        // Load the `table` in the `<perspective-viewer>` DOM reference.
 
-      // Add more Perspective configurations here.
-      elem.load(this.table);
+        // Add more Perspective configurations here.
+        elem.load(this.table);
+        elem.setAttribute('view', 'y_line');//grid type
+        elem.setAttribute('column-pivots', '["stock"]');//distinguish stock ABC from DEF, use stock value
+        elem.setAttribute('row-pivots', '["timestamp"]');//x-axis
+        elem.setAttribute('columns', '["top_ask_price"]');//focus on a particular part of a stock’s data along the y-axis
+        // handle the duplicated data we observed earlier and consolidate it into a single data point.
+        elem.setAttribute('aggregates', `
+        {"stock": "distinct count",
+        "top_ask_price":"avg",
+        "top_bid_price": "avg",
+        "timestamp":"distinct count"}`)
+        }
+    
     }
-  }
-
   componentDidUpdate() {
     // Everytime the data props is updated, insert the data into Perspective table
     if (this.table) {
